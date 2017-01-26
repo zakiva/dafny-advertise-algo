@@ -108,6 +108,7 @@ class AdvertisingManager {
     requires publisher !in ads
 	requires minPublisher != null
 	requires minPublisher in publishers
+  	requires minPublisher in ads
     requires forall p :: p in publishers ==> p != null
     requires forall p :: p in publishers ==> p in ads
     requires forall p :: p in ads ==> ads[p] != null
@@ -115,17 +116,23 @@ class AdvertisingManager {
     requires |publishers| > 0
 	ensures minPublisher !in publishers
 	ensures minPublisher !in ads
-	// ensures publisher in publishers
-	// ensures publisher in ads
+	 ensures publisher in publishers
+	 ensures publisher in ads
 
     // need to fix the errors here: ensures !isPriceLessThanMinPrice(price, ads) ==> publisher in publishers
     //VERY BAD : //ensures forall p :: !(p in ads && ads[p] != null && ads[p].price >= price && p == publisher) ==> p !in publishers && p !in ads // && .... 
     {
+
+                  
             var newAd : Ad := new Ad(ads[minPublisher].banner, price); // create a new ad 
+            
+                              ads:= map p | p in ads && p != minPublisher :: ads[p]; // remove the ad
+                              
+                              
             ads := ads[publisher := newAd]; // add the new ad
             publishers := publishers + [publisher]; //add the publisher
-            ads:= map p | p in ads && p != minPublisher :: ads[p]; // remove the ad
-            removePublisherFromPublishers(minPublisher);
+
+            removePublisherFromPublishers(minPublisher, publisher);
 	}
 
 
@@ -152,18 +159,52 @@ class AdvertisingManager {
         // note: if not "atomic" need to do it more safely
 
 
-        removePublisherFromPublishers(publisher);
+        removePublisherFromPublishersForStop(publisher);
 
     } 
     
 
-    method removePublisherFromPublishers (publisher: Publisher)
+    method removePublisherFromPublishers (publisher: Publisher, newPublisher : Publisher)
     modifies this;
     requires publisher != null;
+    requires newPublisher in ads
+        requires newPublisher in publishers
     requires publisher in publishers;
     requires publisher !in ads;
     requires forall p :: p in ads ==> ads[p] != null
     ensures publisher !in publishers;
+    ensures newPublisher in publishers;
+    ensures newPublisher in ads;
+    ensures publisher !in ads;
+    ensures forall p :: p in ads ==> ads[p] != null
+
+    {
+        var index := 0;
+        var newPublishers : seq<Publisher> := [];
+        while (index < |publishers|)
+        decreases |publishers| - index // not needed - but it seems more complicated :) 
+        invariant 0 <= index <= |publishers| && publisher !in newPublishers && forall i :: 0 <= i < index ==> publishers[i] in newPublishers || publishers[i] == publisher // index bounds not needed - but it seems more complicated :) 
+        {
+            if (publishers[index] != publisher)
+            {
+                newPublishers := newPublishers + [publishers[index]];
+            }
+            index := index + 1;
+        }
+
+        publishers := newPublishers;
+    }
+    
+    
+    method removePublisherFromPublishersForStop (publisher: Publisher)
+    modifies this;
+    requires publisher != null;
+
+    requires publisher in publishers;
+    requires publisher !in ads;
+    requires forall p :: p in ads ==> ads[p] != null
+    ensures publisher !in publishers;
+
     ensures publisher !in ads;
     ensures forall p :: p in ads ==> ads[p] != null
 
