@@ -66,18 +66,33 @@ class AdvertisingManager {
     }
     */
     
+    function isPriceLessThanMinPrice (price : int, ads: map <Publisher, Ad>) : bool
+    reads valuesOfAds(ads)
+    requires forall p :: p in ads ==> ads[p] != null
+    {
+      forall p :: p in ads ==> ads[p].price >= price
+    }
+    
+    function valuesOfAds (myAds : map<Publisher, Ad>) : set<Ad>
+    {
+      set p: Publisher | p in myAds :: myAds[p]
+    }
+    
     
     
 
     method replaceMin (publisher : Publisher, price : int)
     modifies this
     requires publisher != null
+    requires publisher !in publishers
+    requires publisher !in ads
     requires forall p :: p in publishers ==> p != null
     requires forall p :: p in publishers ==> p in ads
     requires forall p :: p in ads ==> ads[p] != null
     requires forall p :: p in ads ==> ads[p].banner != null
     requires |publishers| > 0
-    //ensures forall p :: !(p in ads && ads[p] != null && ads[p].price >= price && p == publisher) ==> p !in publishers && p !in ads // && .... 
+    // need to fix the errors here: ensures !isPriceLessThanMinPrice(price, ads) ==> publisher in publishers
+    //VERY BAD : //ensures forall p :: !(p in ads && ads[p] != null && ads[p].price >= price && p == publisher) ==> p !in publishers && p !in ads // && .... 
     {
         var minPublisher := publishers[0];
         var minPrice := ads[minPublisher].price;
@@ -102,19 +117,26 @@ class AdvertisingManager {
 
             // CODE DUPLICATE
             var newAd : Ad := new Ad(ads[minPublisher].banner, price); // create a new ad
+            
+          //  assert newAd != null;
+            
             ads := ads[publisher := newAd]; // add the new ad
             publishers := publishers + [publisher]; //add the publisher
             // CODE DUPLICATE
+            
+            
+            
+            //remove ad of minPubliushers from ads
+
+            ads:= map p | p in ads && p != minPublisher :: ads[p]; // remove the ad
 
 
 
             //remove minPublisher from publishers
 
-            removePublisherFromPublishers(minPublisher, true);
+            removePublisherFromPublishers(minPublisher);
 
-            //remove ad of minPubliushers from ads
-
-            ads:= map p | p in ads && p != minPublisher :: ads[p]; // remove the ad
+    
 
         }
 
@@ -132,6 +154,7 @@ class AdvertisingManager {
     requires publisher in publishers;
     requires ads[publisher] != null
     requires forall p :: p in publishers ==> ads[publisher].banner != null && ads[publisher].banner !in availableBanners
+    requires forall p :: p in ads ==> ads[p] != null
     ensures publisher !in ads;
     ensures publisher !in publishers;
     {
@@ -143,18 +166,20 @@ class AdvertisingManager {
         // note: if not "atomic" need to do it more safely
 
 
-        removePublisherFromPublishers(publisher, false);
+        removePublisherFromPublishers(publisher);
 
     } 
     
 
-    method removePublisherFromPublishers (publisher: Publisher, replace : bool)
+    method removePublisherFromPublishers (publisher: Publisher)
     modifies this;
     requires publisher != null;
     requires publisher in publishers;
-    requires publisher !in ads || replace;
+    requires publisher !in ads;
+    requires forall p :: p in ads ==> ads[p] != null
     ensures publisher !in publishers;
-    ensures publisher !in ads || replace;
+    ensures publisher !in ads;
+    ensures forall p :: p in ads ==> ads[p] != null
     {
         var index := 0;
         var newPublishers : seq<Publisher> := [];
@@ -195,9 +220,11 @@ class AdvertisingManager {
     modifies this;
     requires banner != null
     requires banner !in availableBanners;
+    requires forall p :: p in ads ==> ads[p] != null
     requires publisher in publishers;
     ensures banner in availableBanners;
     ensures publisher in publishers;
+    ensures forall p :: p in ads ==> ads[p] != null
     {
         availableBanners := availableBanners + [banner];
     }
@@ -255,4 +282,6 @@ class Ad
     }
 }
 
+
+//try nat instead of int 
 //getters problem - maybe we can just drop them and access directly
