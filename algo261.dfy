@@ -1,34 +1,12 @@
-//method Main() {
-  /*
-  print("start\n");
-
-  var p : Publisher := new Publisher(100);
-
-  var a : Advertise := new Advertise();
-
-  print(p);
-  print("\n");
-  print(a.ads);
-  print("\n");
-  print(p.payment);
-  print("\n");
-  print(p !in a.ads);
-  print("\n");
-
-
-//  assert p !in a.ads; //why this considered as an assertion violation?
-//  a.startPublish(p);
-
-
-  print("end\n");
-}
-*/
-
 class AdvertisingManager {
 
     var availableBanners: seq<Banner>;
+    
+    var availableBannersSize: int;
 
     var publishers: seq<Publisher>;
+    
+    var globalMinPublisher: Publisher;
 
     var ads: map <Publisher, Ad>;
 
@@ -38,22 +16,32 @@ class AdvertisingManager {
         availableBanners := [];
         publishers := [];
         ads := map[];
+        globalMinPublisher := null;
     }
     
    
 
     method startPublish(publisher: Publisher, price: int)
     modifies this;
-	requires |publishers| > 0
     requires publisher != null;
     requires publisher !in publishers;
     requires publisher !in ads;
     requires forall banner :: banner in availableBanners  ==> banner != null
 	requires |availableBanners| > 0
 	requires availableBanners[0] != null
-    //ensuers ???
-	ensures |availableBanners| > 0 ==> publisher in publishers
+
+	ensures availableBannersSize > 0 ==> publisher in publishers && publisher in ads
+  
+  ensures availableBannersSize == 0 && !isPriceLessThanMinPrice(price, ads)  ==> publisher in publishers && publisher in ads && globalMinPublisher !in ads
+  
+  ensures availableBannersSize == 0 && isPriceLessThanMinPrice(price, ads) ==> publisher !in publishers && publisher !in ads 
+  //needs to ensures no changes in last one 
+  
     {
+      
+      availableBannersSize := |availableBanners|;
+      
+      
         if (|availableBanners| > 0) {
         var newAd : Ad := new Ad(availableBanners[0], price); // create a new ad
         ads := ads[publisher := newAd]; // add the new ad
@@ -62,6 +50,8 @@ class AdvertisingManager {
         // note: if not "atomic" need to do it more safely
     }
     else {
+      
+      if (	|publishers| > 0) {
 	    var minPublisher := publishers[0];
         var minPrice := ads[minPublisher].price;
 
@@ -78,12 +68,15 @@ class AdvertisingManager {
             }
             index := index + 1;
         }
+        
+        globalMinPublisher := minPublisher; 
 
         if (price > minPrice)
         {
-			//replaceMin(minPublisher, publisher, price);
+			     replaceMin(minPublisher, publisher, price);
         }
         
+    }
     }
 
     }
@@ -91,9 +84,9 @@ class AdvertisingManager {
     
     function isPriceLessThanMinPrice (price : int, ads: map <Publisher, Ad>) : bool
     reads valuesOfAds(ads)
-    requires forall p :: p in ads ==> ads[p] != null
+    //requires forall p :: p in ads ==> ads[p] != null
     {
-      forall p :: p in ads ==> ads[p].price >= price
+      forall p :: p in ads && ads[p] != null ==> ads[p].price >= price
     }
     
     function valuesOfAds (myAds : map<Publisher, Ad>) : set<Ad>
@@ -114,10 +107,13 @@ class AdvertisingManager {
     requires forall p :: p in ads ==> ads[p] != null
     requires forall p :: p in ads ==> ads[p].banner != null
     requires |publishers| > 0
+    requires globalMinPublisher == minPublisher
+        ensures globalMinPublisher == minPublisher
 	ensures minPublisher !in publishers
 	ensures minPublisher !in ads
 	 ensures publisher in publishers
 	 ensures publisher in ads
+
 
     // need to fix the errors here: ensures !isPriceLessThanMinPrice(price, ads) ==> publisher in publishers
     //VERY BAD : //ensures forall p :: !(p in ads && ads[p] != null && ads[p].price >= price && p == publisher) ==> p !in publishers && p !in ads // && .... 
@@ -172,6 +168,8 @@ class AdvertisingManager {
     requires publisher in publishers;
     requires publisher !in ads;
     requires forall p :: p in ads ==> ads[p] != null
+        requires globalMinPublisher == publisher
+        ensures globalMinPublisher == publisher
     ensures publisher !in publishers;
     ensures newPublisher in publishers;
     ensures newPublisher in ads;
@@ -269,12 +267,12 @@ class AdvertisingManager {
 
 class Publisher
 {
-   // constructor () {}
+    constructor () {}
 }
 
 class Banner
 {
-  //  constructor () {}
+    constructor () {}
 }
 
 class Ad
