@@ -20,6 +20,7 @@ class AdvertisingManager {
     method addBanner(banner : Banner)
     modifies this
     requires adService != null
+    requires banner !in availableBanners
     ensures banner in availableBanners
     {
         availableBanners := adService.addBanner(banner, availableBanners);
@@ -29,13 +30,15 @@ class AdvertisingManager {
     modifies this
     requires adService != null
     requires publisher in ads && ads[publisher] != null
+    requires ads[publisher].banner !in availableBanners 
     {
       stopPublishAndFreeBanner(publisher, ads[publisher].banner);
     }
     
     method stopPublishAndFreeBanner (publisher: Publisher, banner : Banner) 
     modifies this
-    requires adService != null    
+    requires adService != null 
+    requires banner !in availableBanners    
     ensures publisher !in publishers
     ensures publisher !in ads
     ensures banner in availableBanners
@@ -49,7 +52,9 @@ class AdvertisingManager {
     modifies this
     requires adService != null  
     requires forall p :: p in publishers ==> p != null && p in ads && ads[p] != null && ads[p].banner != null
-    requires forall banner :: banner in availableBanners ==> banner != null  
+    //requires forall banner :: banner in availableBanners ==> banner != null  
+    requires forall i :: 0 <= i < |availableBanners| ==> availableBanners[i] != null
+    requires |availableBanners| > 0 ==> availableBanners[0] !in availableBanners[1..]
     {
       if (|availableBanners| > 0)
       {
@@ -83,11 +88,11 @@ class AdvertisingService
 {
 
     constructor () 
-    {
-      
+    {  
     }
     
     method addBanner(banner : Banner, banners : seq<Banner>) returns (retBanners : seq<Banner>)
+    requires banner !in banners
     ensures banner in retBanners
     {
         return banners + [banner];
@@ -134,7 +139,9 @@ class AdvertisingService
     }
     
     method popFirstBanner(banners : seq<Banner>) returns (retBanners : seq<Banner>)
-    requires |banners| > 0;
+    requires |banners| > 0
+    requires banners[0] !in banners[1..] //- need to ensures it in a more general way ==> I THINK ITS OK NOW 
+    ensures banners[0] !in retBanners   // - need to ensures it in a more general way ==> I THINK ITS OK NOW 
     {
       return banners[1..];
     }
@@ -142,8 +149,11 @@ class AdvertisingService
     method findMinPublisher(publishers : seq<Publisher>, ads : map <Publisher, Ad>) returns (retPublisher : Publisher, retPrice : int)
     requires |publishers| > 0
     requires forall p :: p in publishers ==> p != null && p in ads && ads[p] != null && ads[p].banner != null
+    requires forall p :: p in publishers ==> p in ads
     ensures retPublisher in ads
     ensures retPublisher != null && ads[retPublisher] != null && ads[retPublisher].banner != null
+    ensures ads[retPublisher].price == retPrice
+    ensures forall p :: p in ads ==> ads[p].price >= retPrice // also true forall :: p in publishers... 
     {
       var minPublisher := publishers[0];
       var minPrice := ads[minPublisher].price;
@@ -151,7 +161,7 @@ class AdvertisingService
       var index := 1;
       while (index < |publishers|)
       decreases |publishers| - index
-      invariant   minPublisher in publishers && 0 <= index <= |publishers| && minPublisher in ads && forall i :: 0 <= i < index ==> minPrice <= ads[publishers[i]].price //&& forall i :: 0 <= i < index ==> ads[minPublisher].price <= ads[publishers[i]].price
+      invariant  forall p :: p in publishers ==> p in ads && minPublisher in ads && ads[minPublisher] != null && ads[minPublisher].price == minPrice && minPublisher in publishers && 0 <= index <= |publishers| && minPublisher in ads && forall i :: 0 <= i < index ==> minPrice <= ads[publishers[i]].price //&& forall i :: 0 <= i < index ==> ads[minPublisher].price <= ads[publishers[i]].price
       {
         var curPrice := ads[publishers[index]].price;
         if (curPrice < minPrice)
@@ -167,19 +177,18 @@ class AdvertisingService
     
 }
 
-
-
-
-
-
 class Publisher
 {
-    constructor () {}
+    constructor () 
+    {
+    }
 }
 
 class Banner
 {
-    constructor () {}
+    constructor () 
+    {
+    }
 }
 
 class Ad
@@ -196,6 +205,8 @@ class Ad
         banner := bannerArg;
         price := priceArg;
     }
+    
+    /* THESE GETTERS ONLY CAUSE PROBLEMS 
 
     method getBanner() returns (b: Banner)
     ensures b == banner;
@@ -208,6 +219,7 @@ class Ad
     {
         return price;
     }
+    */
 }
 
 
