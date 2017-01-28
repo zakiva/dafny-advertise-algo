@@ -203,23 +203,20 @@ class AdvertisingService
     }
     */
     
-    
-    
-    
-
     method startPublish(publisher : Publisher, price : int, publishers : seq<Publisher>, ads : map <Publisher, Ad>, availableBanners : seq<Banner>) returns (retPublishers : seq<Publisher>, retAds : map <Publisher, Ad>, retBanners : seq<Banner>)
     modifies this
     requires publisher !in publishers && publisher !in ads
     requires forall p :: p in publishers <==> p in ads
     requires forall p :: p in publishers ==> p != null && ads[p] != null && ads[p].banner != null
-	  requires forall p :: p in ads ==> ads[p] != null
+	requires forall p :: p in ads ==> ads[p] != null
     requires forall i :: 0 <= i < |availableBanners| ==> availableBanners[i] != null
     requires |availableBanners| > 0 ==> availableBanners[0] !in availableBanners[1..]   
-	  ensures |availableBanners| > 0 ==> publisher in retPublishers && publisher in retAds && retAds[publisher] != null && retAds[publisher].price == price  && availableBanners[0] == retAds[publisher].banner && retBanners == availableBanners[1..] && availableBanners[0] !in retBanners
+	ensures |availableBanners| > 0 ==> publisher in retPublishers && publisher in retAds && retAds[publisher] != null && retAds[publisher].price == price  && availableBanners[0] == retAds[publisher].banner && retBanners == availableBanners[1..] && availableBanners[0] !in retBanners
     ensures (|availableBanners| == 0 && |publishers| > 0 && isPriceLessThanMinPrice(price, ads)) ==> publishers == retPublishers && ads == retAds && availableBanners == retBanners && publisher !in publishers && publisher !in ads
-	  ensures (|availableBanners| == 0 && |publishers| > 0 && !isPriceLessThanMinPrice(price, ads)) ==> publisher in retPublishers && publisher in retAds && retAds[publisher] != null && retAds[publisher].price == price && availableBanners == retBanners 
+	ensures (|availableBanners| == 0 && |publishers| > 0 && !isPriceLessThanMinPrice(price, ads)) ==> publisher in retPublishers && publisher in retAds && retAds[publisher] != null && retAds[publisher].price == price && availableBanners == retBanners 
     ensures |availableBanners| == 0 && |publishers| > 0 && !isPriceLessThanMinPrice(price, ads) ==> globalMinPublisher !in retPublishers && globalMinPublisher !in retAds && globalMinPublisher in ads && retAds[publisher].banner == ads[globalMinPublisher].banner 
-    {
+    ensures (|availableBanners| == 0 && |publishers| == 0) ==> publishers == retPublishers && ads == retAds && availableBanners == retBanners && publisher !in publishers && publisher !in ads
+	{
       var newPublishers : seq<Publisher> := publishers;
       var newAds : map <Publisher, Ad> := ads;
       var newBanners : seq<Banner> := availableBanners;
