@@ -170,6 +170,15 @@ class AdvertisingManager {
     {
         availableBanners := adService.addBanner(banner, availableBanners);
     }
+
+	method deleteBanner(banner : Banner)
+    modifies this
+    requires adService != null
+    requires banner in availableBanners
+    //ensures banner in availableBanners
+    {
+        availableBanners := adService.deleteBanner(banner, availableBanners);
+    }
     
     /*    
     method stopPublish (publisher: Publisher) //wrapper method for stopPublishAndFreeBanner (just to keep pointer for banner in the post-condition)
@@ -233,6 +242,25 @@ class AdvertisingService
     ensures banner in retBanners
     {
         return banners + [banner];
+    }
+
+	method deleteBanner(banner : Banner, availableBanners : seq<Banner>) returns (retBanners : seq<Banner>)
+    requires banner in availableBanners
+    ensures banner !in retBanners
+    {
+		var index := 0;
+		var newBanners : seq<Banner> := [];
+        while (index < |availableBanners|)
+        decreases |availableBanners| - index // not needed - but it seems more complicated :)
+        invariant 0 <= index <= |availableBanners| && banner !in newBanners
+        {
+            if (availableBanners[index] != banner)
+            {
+                newBanners := newBanners + [availableBanners[index]];
+            }
+            index := index + 1;
+        }
+        return newBanners;
     }
     
     method removeAdOfPublisher(publisher : Publisher, ads : map <Publisher, Ad>) returns (retAds : map <Publisher, Ad>)
