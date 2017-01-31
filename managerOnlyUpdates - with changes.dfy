@@ -208,8 +208,18 @@ class AdvertisingManager {
     }
 	
 	method isInPublishers(publisher : Publisher) returns (status : bool)
+<<<<<<< 147f32d03146595d148689c1efaa6a7dc1a3dda5
 	ensures publisher in publishers ==> status == true
 	ensures publisher !in publishers ==> status == false
+=======
+<<<<<<< 147f32d03146595d148689c1efaa6a7dc1a3dda5
+	ensures publisher in publishers ==> status == true
+	ensures publisher !in publishers ==> status == false
+=======
+	requires arePublishersInBothLists (ads, publishers)
+	ensures publisher in publishers <==> status == true
+>>>>>>> Add isInPublisher method
+>>>>>>> Add isInPublisher method
 	{
 		return publisher in publishers;
 	}        
