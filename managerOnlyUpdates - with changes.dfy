@@ -143,13 +143,6 @@ reads valuesOfAds(ads)
 
 
 
-
-
-
-
-
-
-
 class AdvertisingManager {
 
     var availableBanners: seq<Banner>;
@@ -212,12 +205,18 @@ class AdvertisingManager {
 	requires startPublishCorrectChanges(publisher, availableBanners, publishers, ads)
     {
         publishers, ads, availableBanners := adService.startPublish(publisher, price, publishers, ads, availableBanners);
-    }        
+    }
+	
+	method isInPublishers(publisher : Publisher) returns (status : bool)
+	ensures publisher in publishers ==> status == true
+	ensures publisher !in publishers ==> status == false
+	{
+		return publisher in publishers;
+	}        
 }
 
 class AdvertisingService 
 {
-  
     var globalMinPublisher: Publisher;
 
     constructor () 
