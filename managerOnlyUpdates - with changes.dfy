@@ -141,8 +141,6 @@ reads valuesOfAds(ads)
 	0 <= index <= |publishers| && minPublisher in ads && forall i :: 0 <= i < index ==> minPrice <= ads[publishers[i]].price && isNoNullAds(ads)
 }
 
-
-
 class AdvertisingManager {
 
     var availableBanners: seq<Banner>;
@@ -171,13 +169,12 @@ class AdvertisingManager {
         availableBanners := adService.addBanner(banner, availableBanners);
     }
 
-	method deleteBanner(banner : Banner)
+	method removeBanner(banner : Banner)
     modifies this
     requires adService != null
     requires banner in availableBanners
-    //ensures banner in availableBanners
     {
-        availableBanners := adService.deleteBanner(banner, availableBanners);
+        availableBanners := adService.removeBanner(banner, availableBanners);
     }
     
     /*    
@@ -221,7 +218,13 @@ class AdvertisingManager {
 	ensures publisher in publishers <==> status == true
 	{
 		return publisher in publishers;
-	}        
+	} 
+	
+	method isBannerAvailable(banner : Banner) returns (status : bool)
+	ensures banner in availableBanners <==> status == true
+	{
+		return banner in availableBanners;
+	}         
 }
 
 class AdvertisingService 
@@ -244,15 +247,17 @@ class AdvertisingService
         return banners + [banner];
     }
 
-	method deleteBanner(banner : Banner, availableBanners : seq<Banner>) returns (retBanners : seq<Banner>)
+	method removeBanner(banner : Banner, availableBanners : seq<Banner>) returns (retBanners : seq<Banner>)
     requires banner in availableBanners
     ensures banner !in retBanners
+	ensures forall b :: b in availableBanners && b != banner ==> b in retBanners
     {
 		var index := 0;
 		var newBanners : seq<Banner> := [];
         while (index < |availableBanners|)
         decreases |availableBanners| - index // not needed - but it seems more complicated :)
         invariant 0 <= index <= |availableBanners| && banner !in newBanners
+		invariant forall i :: 0 <= i < index && availableBanners[i] != banner ==> availableBanners[i] in newBanners 
         {
             if (availableBanners[index] != banner)
             {
