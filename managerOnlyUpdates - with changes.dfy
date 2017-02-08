@@ -1,3 +1,5 @@
+// Advertising Manager
+
 class AdvertisingManager {
 
     var availableBanners: seq<Banner>;
@@ -9,7 +11,7 @@ class AdvertisingManager {
     var adService : AdvertisingService;
 
     constructor()
-    modifies this;
+    modifies this
     {
         availableBanners := [];
         publishers := [];
@@ -63,6 +65,8 @@ class AdvertisingManager {
     }
 }
 
+// Advertising Service
+
 class AdvertisingService
 {
     var globalMinPublisher: Publisher;
@@ -85,7 +89,7 @@ class AdvertisingService
         var index := 0;
         var newBanners : seq<Banner> := [];
         while (index < |availableBanners|)
-        decreases |availableBanners| - index
+            decreases |availableBanners| - index
         invariant removeBannerLoopInvariant(index, availableBanners, newBanners, banner)
         {
             if (availableBanners[index] != banner)
@@ -109,7 +113,7 @@ class AdvertisingService
         var index := 0;
         var newPublishers : seq<Publisher> := [];
         while (index < |publishers|)
-        decreases |publishers| - index
+            decreases |publishers| - index
         invariant removePublisherLoopInvariant(index, publishers, newPublishers, publisher)
         {
             if (publishers[index] != publisher)
@@ -123,13 +127,13 @@ class AdvertisingService
     }
 
     method addPublisher (publisher : Publisher, publishers : seq<Publisher>) returns (retPublishers : seq<Publisher>)
-    ensures addPublisherInvariant(publisher, publishers, retPublishers)	
+    ensures addPublisherInvariant(publisher, publishers, retPublishers)
     {
         return publishers + [publisher];
     }
 
     method addAd (publisher : Publisher, price : int, banner : Banner, ads : map <Publisher, Ad>) returns (retAds : map <Publisher, Ad>)
-    requires banner != null;
+    requires banner != null
     ensures addAdInvariant(publisher, price, banner, retAds)
     {
         var newAd : Ad := new Ad(banner, price);
@@ -138,9 +142,7 @@ class AdvertisingService
 
     method popFirstBanner(banners : seq<Banner>) returns (retBanners : seq<Banner>)
     requires |banners| > 0 && banners[0] !in banners[1..]
-    // requires banners[0] !in banners[1..]
     ensures banners[0] !in retBanners && retBanners == banners[1..]
-    // ensures retBanners == banners[1..]
     {
         return banners[1..];
     }
@@ -154,7 +156,7 @@ class AdvertisingService
 
         var index := 1;
         while (index < |publishers|)
-        decreases |publishers| - index
+            decreases |publishers| - index
         invariant findMinPublisherLoopInvariant(minPrice, ads, index, publishers, minPublisher)
         {
             var curPrice := ads[publishers[index]].price;
@@ -172,7 +174,7 @@ class AdvertisingService
     modifies this
     requires startPublishRequirements(publisher, availableBanners, publishers, ads)
     requires isNoNull (availableBanners, publishers, ads)
-    ensures startPublishInvariant(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners, globalMinPublisher);
+    ensures startPublishInvariant(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners, globalMinPublisher)
     {
         var newPublishers : seq<Publisher> := publishers;
         var newAds : map <Publisher, Ad> := ads;
@@ -206,12 +208,16 @@ class AdvertisingService
 
 }
 
+// Publisher
+
 class Publisher
 {
     constructor ()
     {
     }
 }
+
+// Banner
 
 class Banner
 {
@@ -220,23 +226,27 @@ class Banner
     }
 }
 
+// Ad
+
 class Ad
 {
     var banner : Banner;
     var price : int;
 
     constructor(bannerArg : Banner, priceArg : int)
-    modifies this;
-    requires bannerArg != null;
-    ensures banner == bannerArg && price == priceArg;
+    modifies this
+    requires bannerArg != null
+    ensures banner == bannerArg && price == priceArg
     {
         banner := bannerArg;
         price := priceArg;
     }
 }
 
-function isPublishing (publisher : Publisher, ads: map <Publisher, Ad>, publishers : seq<Publisher>) : bool
-		{
+// Conditions Functions
+
+    function isPublishing (publisher : Publisher, ads: map <Publisher, Ad>, publishers : seq<Publisher>) : bool
+        {
         publisher !in publishers &&
         publisher !in ads
         }
@@ -249,10 +259,10 @@ function isPublishing (publisher : Publisher, ads: map <Publisher, Ad>, publishe
 
         function valuesOfAds (myAds : map<Publisher, Ad>) : set<Ad>
         {
-        set p: Publisher | p in myAds :: myAds[p]
-        }
+                set p: Publisher | p in myAds :: myAds[p]
+                }
 
-        function isNoNullPublishers (ads: map <Publisher, Ad>, publishers : seq<Publisher>) : bool
+                function isNoNullPublishers (ads: map <Publisher, Ad>, publishers : seq<Publisher>) : bool
         requires adsKeysEqualsPublishers(ads, publishers)
         reads valuesOfAds(ads)
         {
@@ -275,115 +285,115 @@ function isPublishing (publisher : Publisher, ads: map <Publisher, Ad>, publishe
         }
 
         function isPublisherInAds (publisher : Publisher, retAds: map <Publisher, Ad>) : bool
-		{
+        {
         publisher in retAds &&
         retAds[publisher] != null
         }
 
         function startPublishWithAvailableBanner(publisher : Publisher, price : int, publishers : seq<Publisher>, retPublishers: seq<Publisher>, ads : map <Publisher, Ad>, retAds: map <Publisher, Ad>, availableBanners : seq<Banner>, retBanners: seq<Banner>) : bool
-		reads valuesOfAds(retAds)
+        reads valuesOfAds(retAds)
         {
-        |availableBanners| > 0 ==> publisher in retPublishers && 
-		publisher in retAds && 
-		retAds[publisher] != null && 
-		retAds[publisher].price == price  && 
-		availableBanners[0] == retAds[publisher].banner && 
-		retBanners == availableBanners[1..] && 
-		availableBanners[0] !in retBanners
+        |availableBanners| > 0 ==> publisher in retPublishers &&
+        publisher in retAds &&
+        retAds[publisher] != null &&
+        retAds[publisher].price == price  &&
+        availableBanners[0] == retAds[publisher].banner &&
+        retBanners == availableBanners[1..] &&
+        availableBanners[0] !in retBanners
         }
 
         function startPublishEmptyList (publisher : Publisher, price : int, publishers : seq<Publisher>, retPublishers: seq<Publisher>, ads : map <Publisher, Ad>, retAds: map <Publisher, Ad>, availableBanners : seq<Banner>, retBanners: seq<Banner>) : bool
-		{
-        (|availableBanners| == 0 && 
-		|publishers| == 0) ==> publishers == retPublishers && 
-		ads == retAds && 
-		availableBanners == retBanners && 
-		publisher !in publishers && 
-		publisher !in ads
+        {
+        (|availableBanners| == 0 &&
+        |publishers| == 0) ==> publishers == retPublishers &&
+        ads == retAds &&
+        availableBanners == retBanners &&
+        publisher !in publishers &&
+        publisher !in ads
         }
 
         function publishingStarted (publisher : Publisher, price : int, publishers : seq<Publisher>, retPublishers: seq<Publisher>, ads : map <Publisher, Ad>, retAds: map <Publisher, Ad>, availableBanners : seq<Banner>, retBanners: seq<Banner>, globalMinPublisher: Publisher) : bool
-		reads valuesOfAds(retAds)
+        reads valuesOfAds(retAds)
         reads valuesOfAds(ads)
         requires forall p :: p in ads ==> ads[p] != null
         {
-        (|availableBanners| == 0 && 
-		|publishers| > 0 && 
-		!isPriceLessThanMinPrice(price, ads)) ==> (publisher in retPublishers && 
-		isPublisherInAds(publisher, retAds) && 
-		retAds[publisher].price == price && 
-		availableBanners == retBanners) && 
-		(globalMinPublisher !in retPublishers && 
-		globalMinPublisher !in retAds && 
-		globalMinPublisher in ads && 
-		retAds[publisher].banner == ads[globalMinPublisher].banner)
+        (|availableBanners| == 0 &&
+        |publishers| > 0 &&
+        !isPriceLessThanMinPrice(price, ads)) ==> (publisher in retPublishers &&
+        isPublisherInAds(publisher, retAds) &&
+        retAds[publisher].price == price &&
+        availableBanners == retBanners) &&
+        (globalMinPublisher !in retPublishers &&
+        globalMinPublisher !in retAds &&
+        globalMinPublisher in ads &&
+        retAds[publisher].banner == ads[globalMinPublisher].banner)
         }
 
         function isPriceLessThanMinPrice (price : int, ads: map <Publisher, Ad>) : bool
         reads valuesOfAds(ads)
         {
-        forall p :: p in ads && 
-		ads[p] != null ==> ads[p].price >= price
+        forall p :: p in ads &&
+        ads[p] != null ==> ads[p].price >= price
         }
 
         function publishingNotStarted (publisher : Publisher, price : int, publishers : seq<Publisher>, retPublishers: seq<Publisher>, ads : map <Publisher, Ad>, retAds: map <Publisher, Ad>, availableBanners : seq<Banner>, retBanners: seq<Banner>) : bool
-		reads valuesOfAds(ads)
+        reads valuesOfAds(ads)
         {
-        (|availableBanners| == 0 && 
-		|publishers| > 0 && 
-		isPriceLessThanMinPrice(price, ads)) ==> publishers == retPublishers && 
-		ads == retAds && availableBanners == retBanners && 
-		isPublishing(publisher, ads, publishers)
+        (|availableBanners| == 0 &&
+        |publishers| > 0 &&
+        isPriceLessThanMinPrice(price, ads)) ==> publishers == retPublishers &&
+        ads == retAds && availableBanners == retBanners &&
+        isPublishing(publisher, ads, publishers)
         }
 
         function isNoNull (availableBanners: seq<Banner>, publishers : seq<Publisher>, ads : map <Publisher, Ad>)  : bool
         reads valuesOfAds(ads)
         requires adsKeysEqualsPublishers(ads, publishers)
         {
-        isNoNullPublishers(ads,publishers) && 
-		isNoNullAds(ads) && 
-		isNoNullAvailableBanners(availableBanners)
+        isNoNullPublishers(ads,publishers) &&
+        isNoNullAds(ads) &&
+        isNoNullAvailableBanners(availableBanners)
         }
 
         function adExists(adService : AdvertisingService, publisher: Publisher, ads: map <Publisher, Ad>, availableBanners: seq<Banner>) : bool
         reads valuesOfAds(ads)
         {
-        isPublisherInAds(publisher, ads) && 
-		ads[publisher].banner !in availableBanners
+        isPublisherInAds(publisher, ads) &&
+        ads[publisher].banner !in availableBanners
         }
 
         function startPublishRequirements (publisher: Publisher, availableBanners: seq<Banner>, publishers : seq<Publisher>, ads : map <Publisher, Ad>)  : bool
         reads valuesOfAds(ads)
         {
-        isPublishing(publisher, ads, publishers) && 
-		adsKeysEqualsPublishers(ads, publishers) && 
-		isUniqueAvailableBanners(availableBanners) && 
-		adsKeysEqualsPublishers(ads, publishers)
+        isPublishing(publisher, ads, publishers) &&
+        adsKeysEqualsPublishers(ads, publishers) &&
+        isUniqueAvailableBanners(availableBanners) &&
+        adsKeysEqualsPublishers(ads, publishers)
         }
 
         function findMinPublisherRequirements(publishers : seq<Publisher>, ads : map <Publisher, Ad>) : bool
-		reads valuesOfAds(ads)
+        reads valuesOfAds(ads)
         {
-        |publishers| > 0 && 
-		forall p :: p in publishers ==> p != null && 
-		p in ads && ads[p] != null && 
-		ads[p].banner != null && 
-		adsKeysEqualsPublishers(ads, publishers) && 
-		isNoNullAds(ads) &&
-		(forall p :: p in ads ==> ads[p] != null)
+        |publishers| > 0 &&
+        forall p :: p in publishers ==> p != null &&
+        p in ads && ads[p] != null &&
+        ads[p].banner != null &&
+        adsKeysEqualsPublishers(ads, publishers) &&
+        isNoNullAds(ads) &&
+        (forall p :: p in ads ==> ads[p] != null)
         }
 
         function minPublisherFound(retPrice : int, retPublisher : Publisher, publishers : seq<Publisher>, ads : map <Publisher, Ad>) : bool
-		requires findMinPublisherRequirements(publishers, ads)
+        requires findMinPublisherRequirements(publishers, ads)
         reads valuesOfAds(ads)
         {
-        retPublisher in ads && 
-		retPublisher in publishers && 
-		retPublisher != null && 
-		ads[retPublisher] != null && 
-		ads[retPublisher].banner != null && 
-		ads[retPublisher].price == retPrice && 
-		forall p :: p in ads ==> ads[p].price >= retPrice
+        retPublisher in ads &&
+        retPublisher in publishers &&
+        retPublisher != null &&
+        ads[retPublisher] != null &&
+        ads[retPublisher].banner != null &&
+        ads[retPublisher].price == retPrice &&
+        forall p :: p in ads ==> ads[p].price >= retPrice
         }
 
         function startPublishInvariant(publisher : Publisher, price : int, publishers : seq<Publisher>, retPublishers: seq<Publisher>, ads : map <Publisher, Ad>, retAds: map <Publisher, Ad>, availableBanners : seq<Banner>, retBanners: seq<Banner>, globalMinPublisher: Publisher) : bool
@@ -391,35 +401,35 @@ function isPublishing (publisher : Publisher, ads: map <Publisher, Ad>, publishe
         reads valuesOfAds(ads)
         requires forall p :: p in ads ==> ads[p] != null
         {
-        startPublishWithAvailableBanner(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners) && 
-		publishingNotStarted(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners) && 
-		publishingStarted(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners, globalMinPublisher) && 
-		startPublishEmptyList(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners)
+        startPublishWithAvailableBanner(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners) &&
+        publishingNotStarted(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners) &&
+        publishingStarted(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners, globalMinPublisher) &&
+        startPublishEmptyList(publisher, price, publishers, retPublishers, ads, retAds, availableBanners, retBanners)
         }
 
-		function removePublisherLoopInvariant(index: int, publishers: seq<Publisher>, newPublishers: seq<Publisher>, publisher: Publisher) : bool
-		{
-        0 <= index <= |publishers| && 
-		publisher !in newPublishers && 
-		forall i :: 0 <= i < index && 
-		publishers[i] != publisher ==> publishers[i] in newPublishers
+        function removePublisherLoopInvariant(index: int, publishers: seq<Publisher>, newPublishers: seq<Publisher>, publisher: Publisher) : bool
+        {
+        0 <= index <= |publishers| &&
+        publisher !in newPublishers &&
+        forall i :: 0 <= i < index &&
+        publishers[i] != publisher ==> publishers[i] in newPublishers
         }
 
 
-		function findMinPublisherLoopInvariant(minPrice: int, ads : map <Publisher, Ad>, index: int, publishers: seq<Publisher>, minPublisher: Publisher) : bool
+        function findMinPublisherLoopInvariant(minPrice: int, ads : map <Publisher, Ad>, index: int, publishers: seq<Publisher>, minPublisher: Publisher) : bool
         requires isNoNullAds(ads)
         requires adsKeysEqualsPublishers(ads, publishers)
         reads valuesOfAds(ads)
         {
-        forall p :: p in publishers ==> p in ads && 
-		minPublisher in ads && 
-		ads[minPublisher] != null && 
-		ads[minPublisher].price == minPrice && 
-		minPublisher in publishers && 
-		0 <= index <= |publishers| && 
-		minPublisher in ads && 
-		forall i :: 0 <= i < index ==> minPrice <= ads[publishers[i]].price && 
-		isNoNullAds(ads)
+        forall p :: p in publishers ==> p in ads &&
+        minPublisher in ads &&
+        ads[minPublisher] != null &&
+        ads[minPublisher].price == minPrice &&
+        minPublisher in publishers &&
+        0 <= index <= |publishers| &&
+        minPublisher in ads &&
+        forall i :: 0 <= i < index ==> minPrice <= ads[publishers[i]].price &&
+        isNoNullAds(ads)
         }
 
         function bannerRemovedInvariant(banner : Banner, retBanners : seq<Banner>, availableBanners : seq<Banner>) : bool
@@ -434,31 +444,31 @@ function isPublishing (publisher : Publisher, ads: map <Publisher, Ad>, publishe
         forall p :: p in ads && p != publisher ==> p in retAds && retAds[p] == ads[p]
         }
 
-		function removePublisherInvariant(publisher : Publisher, publishers : seq<Publisher>, retPublishers : seq<Publisher>) : bool
-		{
-		publisher !in retPublishers && 
-		forall p :: p in publishers && 
-		p != publisher ==> p in retPublishers
-		}
+        function removePublisherInvariant(publisher : Publisher, publishers : seq<Publisher>, retPublishers : seq<Publisher>) : bool
+        {
+        publisher !in retPublishers &&
+        forall p :: p in publishers &&
+        p != publisher ==> p in retPublishers
+        }
 
-		function addPublisherInvariant(publisher : Publisher, publishers : seq<Publisher>, retPublishers : seq<Publisher>) : bool
-		{
-		publisher in retPublishers && 
-		forall p :: p in publishers ==> p in retPublishers
-		}
+        function addPublisherInvariant(publisher : Publisher, publishers : seq<Publisher>, retPublishers : seq<Publisher>) : bool
+        {
+        publisher in retPublishers &&
+        forall p :: p in publishers ==> p in retPublishers
+        }
 
-		function addAdInvariant(publisher : Publisher, price : int, banner : Banner, retAds : map <Publisher, Ad>) : bool
-		reads valuesOfAds(retAds)
-		{
-		isPublisherInAds(publisher, retAds) && 
-		retAds[publisher].price == price && 
-		retAds[publisher].banner == banner
-		}
+        function addAdInvariant(publisher : Publisher, price : int, banner : Banner, retAds : map <Publisher, Ad>) : bool
+        reads valuesOfAds(retAds)
+        {
+        isPublisherInAds(publisher, retAds) &&
+        retAds[publisher].price == price &&
+        retAds[publisher].banner == banner
+        }
 
-		function removeBannerLoopInvariant(index: int, availableBanners: seq<Banner>, newBanners: seq<Banner>, banner: Banner) : bool
-		{
-		0 <= index <= |availableBanners| && banner !in newBanners && forall i :: 0 <= i < index && availableBanners[i] != banner ==> availableBanners[i] in newBanners
-		}
+        function removeBannerLoopInvariant(index: int, availableBanners: seq<Banner>, newBanners: seq<Banner>, banner: Banner) : bool
+        {
+        0 <= index <= |availableBanners| && banner !in newBanners && forall i :: 0 <= i < index && availableBanners[i] != banner ==> availableBanners[i] in newBanners
+        }
 
 
 
