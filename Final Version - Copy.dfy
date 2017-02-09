@@ -153,7 +153,7 @@ class AdvertisingService
     ensures minPublisherFound(retPrice, retPublisher, publishers, ads)
     {
         var minPublisher := publishers[0];
-	    var minPrice : nat;
+	var minPrice : nat;
         minPrice := ads[minPublisher].rentPrice;
 
         var index := 1;
@@ -469,3 +469,5 @@ function removeBannerLoopInvariant(index: int, availableBanners: seq<Banner>, ne
 {
 	0 <= index <= |availableBanners| && banner !in newBanners && forall i :: 0 <= i < index && availableBanners[i] != banner ==> availableBanners[i] in newBanners
 }
+
+
