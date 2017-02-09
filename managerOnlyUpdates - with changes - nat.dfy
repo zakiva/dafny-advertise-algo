@@ -468,3 +468,5 @@ function removeBannerLoopInvariant(index: int, availableBanners: seq<Banner>, ne
 {
 	0 <= index <= |availableBanners| && banner !in newBanners && forall i :: 0 <= i < index && availableBanners[i] != banner ==> availableBanners[i] in newBanners
 }
+
+
